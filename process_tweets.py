@@ -9,8 +9,20 @@ from transformers import AutoTokenizer
 
 
 def clean_tweet_text(text):
-    # TODO Clean the tweet text to remove unnecessary information, such as @s, links and #s
-    return text
+    # Clean the tweet text to remove unnecessary information, such as @s, links and #s
+    new_text = []
+    for line in text.splitlines():
+        trim_line = line.strip()
+        if len(trim_line) > 1:
+            for word in trim_line.split(" "):
+                if word.startswith("@") and len(word) > 1:
+                    word = "@user"
+                elif word.startswith("http"):
+                    word = "http"
+                elif word.startswith("#") and len(word) > 1:
+                    word = "#"
+                new_text.append(word)
+    return " ".join(new_text)
 
 
 def analyze_text_to_sentiment(model, tokenizer, text):
@@ -37,12 +49,16 @@ def try_read(starting_row, total_row):
 
     labels = ["-1", "0", "1"]
     new_col_values = []
+    new_col_clean_tweet = []
     for index, row in df.iterrows():
         print(index)  # Show me the progress!
-        senti = analyze_text_to_sentiment(model, tokenizer, clean_tweet_text(row["text"]))
+        clean_tweet = clean_tweet_text(row["text"])
+        senti = analyze_text_to_sentiment(model, tokenizer, clean_tweet)
         new_col_values.append(labels[senti])
+        new_col_clean_tweet.append(clean_tweet)
 
-    # Add the new column to the dataframe
+    # Add the new columns to the dataframe
+    df["clean_tweet"] = new_col_clean_tweet
     df["sentiment"] = new_col_values
     df.to_csv("updated_data_with_sentiment.csv", index=False)
 
